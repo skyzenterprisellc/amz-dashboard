@@ -12,7 +12,7 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { RefreshCw, Download, Filter, Search, Sun, Moon, Menu, X } from 'lucide-react';
+import { RefreshCw, Download, Filter, Search, Sun, Moon, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 type RangeKey =
   | 'Today'
@@ -28,6 +28,7 @@ type ProductRow = {
   imageUrl: string;
   product: string;
   asin: string;
+  sku: string; // ✅ ekle
   sales: number;
   units: number;
   orders: number;
@@ -171,6 +172,7 @@ type ThemeMode = 'night' | 'day';
 export default function Page() {
   // 1) default DAY
   const [theme, setTheme] = useState<ThemeMode>('day');
+  const [showTrendStats, setShowTrendStats] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [range, setRange] = useState<RangeKey>('Today');
   const [query, setQuery] = useState('');
@@ -276,7 +278,11 @@ export default function Page() {
   ];
 
   const pad = (n: number) => String(n).padStart(2, '0');
-  const asin = (i: number) => `B0${(7000 + i).toString(36).toUpperCase()}...`;
+  const asin = (i: number) => {
+  // 10 chars, ASIN-like: B0 + 8 chars
+  const core = (10000000 + i * 7919).toString(36).toUpperCase(); // deterministic
+  return `B0${core.padStart(8, '0').slice(0, 8)}`;
+};
 
 return Array.from({ length: 30 }, (_, i) => {
   const t = templates[i % templates.length];
@@ -302,14 +308,13 @@ return Array.from({ length: 30 }, (_, i) => {
   const bsr = 1200 + i * 173;
 
   // ✅ DUMMY IMAGE
-  const imageUrl = `https://m.media-amazon.com/images/I/71fmAN6pqNL.jpg?text=${encodeURIComponent(
-    t.sku
-  )}`;
+  const imageUrl = "https://m.media-amazon.com/images/I/71fmAN6pqNL.jpg";
 
   return {
-    imageUrl, // ✅ buraya ekledik
+    imageUrl,
     product: t.product,
-    asin: `${asin(i)} (${t.sku}-${pad(i + 1)})`,
+    asin: asin(i),
+    sku: `${t.sku}-${pad(i + 1)}`,
     sales,
     units,
     orders,
@@ -324,7 +329,6 @@ return Array.from({ length: 30 }, (_, i) => {
   };
 });
 }, [range]);
-
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -462,113 +466,122 @@ return Array.from({ length: 30 }, (_, i) => {
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Right: charts */}
           <aside className="lg:col-span-12 grid gap-4 lg:grid-cols-2">
-            <section className="rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold">Trend</div>
-                  <div className="text-xs text-[var(--muted3)]">Sales, profit, units</div>
-                </div>
+  {/* Trend */}
+  <section className="rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] p-4">
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <div className="text-sm font-semibold">Trend</div>
+        <div className="text-xs text-[var(--muted3)]">Sales, profit, units</div>
+      </div>
 
-                <div className="flex gap-2">
-                  {(['Sales', 'Net Profit', 'Units'] as const).map((m) => {
-                    const active = metric === m;
-                    return (
-                      <button
-                        key={m}
-                        onClick={() => setMetric(m)}
-                        className={[
-                          'rounded-xl px-2.5 py-1 text-[11px] font-medium transition',
-                          active
-                            ? 'bg-[var(--chipActiveBg)] text-[var(--chipActiveText)]'
-                            : 'bg-[var(--chipBg)] text-[var(--muted2)] hover:text-[var(--text)] hover:bg-[var(--chipHoverBg)] ring-1 ring-[var(--ring)]',
-                        ].join(' ')}
-                      >
-                        {m}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+      <div className="flex gap-2 items-center">
+        <div className="flex gap-2">
+          {(['Sales', 'Net Profit', 'Units'] as const).map((m) => {
+            const active = metric === m;
+            return (
+              <button
+                key={m}
+                onClick={() => setMetric(m)}
+                className={[
+                  'rounded-xl px-2.5 py-1 text-[11px] font-medium transition',
+                  active
+                    ? 'bg-[var(--chipActiveBg)] text-[var(--chipActiveText)]'
+                    : 'bg-[var(--chipBg)] text-[var(--muted2)] hover:text-[var(--text)] hover:bg-[var(--chipHoverBg)] ring-1 ring-[var(--ring)]',
+                ].join(' ')}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
 
-              <div className="mt-4 h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
-                    <XAxis dataKey="day" stroke="var(--axis)" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="var(--axis)" tick={{ fontSize: 11 }} />
-                    <RTooltip
-                      contentStyle={{
-                        background: 'var(--tooltipBg)',
-                        border: '1px solid var(--tooltipBorder)',
-                        borderRadius: 12,
-                      }}
-                      labelStyle={{ color: 'var(--muted2)' }}
-                    />
-                    <Line type="monotone" dataKey={lineKey} strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+        <button
+          onClick={() => setShowTrendStats((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)]
+                     px-2.5 py-1 text-[11px] font-medium text-[var(--muted2)]
+                     hover:text-[var(--text)] hover:bg-[var(--chipHoverBg)] transition"
+        >
+          {showTrendStats ? 'Hide stats' : 'Show stats'}
+          {showTrendStats ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+      </div>
+    </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-[var(--muted2)]">
-                <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
-                  <div className="text-[11px] uppercase text-[var(--muted)]">Refund rate</div>
-                  <div className="mt-1 font-semibold text-[var(--text)]">{pct(kpis.refunds)}</div>
-                </div>
-                <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
-                  <div className="text-[11px] uppercase text-[var(--muted)]">Ad spend</div>
-                  <div className="mt-1 font-semibold text-[var(--text)]">{money(kpis.adSpend)}</div>
-                </div>
-                <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
-                  <div className="text-[11px] uppercase text-[var(--muted)]">ROI</div>
-                  <div className="mt-1 font-semibold text-[var(--text)]">{pct(kpis.roi)}</div>
-                </div>
-              </div>
-            </section>
+    <div className="mt-4 h-52">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={trend}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
+          <XAxis dataKey="day" stroke="var(--axis)" tick={{ fontSize: 11 }} />
+          <YAxis stroke="var(--axis)" tick={{ fontSize: 11 }} />
+          <RTooltip
+            contentStyle={{
+              background: 'var(--tooltipBg)',
+              border: '1px solid var(--tooltipBorder)',
+              borderRadius: 12,
+            }}
+            labelStyle={{ color: 'var(--muted2)' }}
+          />
+          <Line type="monotone" dataKey={lineKey} strokeWidth={2} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
 
-            <section className="rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold">Top ASINs</div>
-                  <div className="text-xs text-[var(--muted3)]">By net profit</div>
-                </div>
-              </div>
+    {showTrendStats ? (
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-[var(--muted2)]">
+        <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
+          <div className="text-[11px] uppercase text-[var(--muted)]">Refund rate</div>
+          <div className="mt-1 font-semibold text-[var(--text)]">{pct(kpis.refunds)}</div>
+        </div>
+        <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
+          <div className="text-[11px] uppercase text-[var(--muted)]">Ad spend</div>
+          <div className="mt-1 font-semibold text-[var(--text)]">{money(kpis.adSpend)}</div>
+        </div>
+        <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
+          <div className="text-[11px] uppercase text-[var(--muted)]">ROI</div>
+          <div className="mt-1 font-semibold text-[var(--text)]">{pct(kpis.roi)}</div>
+        </div>
+      </div>
+    ) : null}
+  </section>
 
-              <div className="mt-4 h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topAsins}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
-                    <XAxis dataKey="name" stroke="var(--axis)" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="var(--axis)" tick={{ fontSize: 11 }} />
-                    <RTooltip
-                      contentStyle={{
-                        background: 'var(--tooltipBg)',
-                        border: '1px solid var(--tooltipBorder)',
-                        borderRadius: 12,
-                      }}
-                      labelStyle={{ color: 'var(--muted2)' }}
-                    />
-                    <Bar dataKey="profit" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
-          </aside>
+  {/* Top ASINs */}
+  <section className="rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] p-4">
+    <div>
+      <div className="text-sm font-semibold">Top ASINs</div>
+      <div className="text-xs text-[var(--muted3)]">By net profit</div>
+    </div>
+
+    <div className="mt-4 h-48">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={topAsins}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
+          <XAxis dataKey="name" stroke="var(--axis)" tick={{ fontSize: 11 }} />
+          <YAxis stroke="var(--axis)" tick={{ fontSize: 11 }} />
+          <RTooltip
+            contentStyle={{
+              background: 'var(--tooltipBg)',
+              border: '1px solid var(--tooltipBorder)',
+              borderRadius: 12,
+            }}
+            labelStyle={{ color: 'var(--muted2)' }}
+          />
+          <Bar dataKey="profit" fill="#FF9900" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </section>
+</aside>
+
           {/* Left: table */}
           <section className="lg:col-span-12 rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] overflow-hidden">
-            <div className="px-4 py-3 border-b border-[var(--ring)] flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">Products</div>
-                <div className="text-xs text-[var(--muted3)]">By ASIN • {range}</div>
-              </div>
-              <div className="text-xs text-[var(--muted)]">Showing {filtered.length}</div>
-            </div>
-
+            
             <div className="overflow-auto">
-              <table className="min-w-[1100px] w-full text-sm">
+              <table className="min-w-[1180px] w-full text-sm">
                 <thead className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
                   <tr className="border-b border-[var(--ring)] bg-[var(--panelAlt)]">
                     <th className="text-left px-4 py-3 w-[320px]">Product</th>
                     <th className="text-left px-3 py-3">ASIN</th>
+                    <th className="text-left px-3 py-3">SKU</th> {/* ✅ */}
                     <th className="text-right px-3 py-3">Sales</th>
                     <th className="text-right px-3 py-3">Units</th>
                     <th className="text-right px-3 py-3">Orders</th>
@@ -607,6 +620,7 @@ return Array.from({ length: 30 }, (_, i) => {
 </td>
 
                         <td className="px-3 py-3 text-[var(--muted2)]">{r.asin}</td>
+                        <td className="px-3 py-3 text-[var(--muted2)]">{r.sku}</td> {/* ✅ */}
                         <td className="px-3 py-3 text-right tabular-nums">{money(r.sales)}</td>
                         <td className="px-3 py-3 text-right tabular-nums">{num(r.units)}</td>
                         <td className="px-3 py-3 text-right tabular-nums">{num(r.orders)}</td>
