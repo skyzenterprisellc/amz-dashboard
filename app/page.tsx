@@ -28,7 +28,7 @@ type ProductRow = {
   imageUrl: string;
   product: string;
   asin: string;
-  sku: string; // ✅ ekle
+  sku: string; 
   sales: number;
   units: number;
   orders: number;
@@ -661,3 +661,6 @@ return Array.from({ length: 30 }, (_, i) => {
     </div>
   );
 }
+
+// deploy ping
+
