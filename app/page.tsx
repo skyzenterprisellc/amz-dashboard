@@ -25,6 +25,7 @@ type RangeKey =
   | 'Custom';
 
 type ProductRow = {
+  imageUrl: string;
   product: string;
   asin: string;
   sales: number;
@@ -260,86 +261,70 @@ export default function Page() {
     ];
   }, [range]);
 
-  const rows: ProductRow[] = useMemo(
-    () => [
-      {
-        product: 'Magnelex Car Windshield Sunshade',
-        asin: 'B074DL... (MG-WS-2)',
-        sales: 205.06,
-        units: 14,
-        orders: 14,
-        fees: 144.86,
-        refunds: 38.88,
-        netProfit: 33.18,
-        netProfitPerUnit: 2.37,
-        inventory: 232,
-        avgUnitsPerDay: 14,
-        stockoutDate: 'Feb 06, 2026',
-        bsr: 1897,
-      },
-      {
-        product: 'Windshield Sunshade for Tesla',
-        asin: 'B0D2Z... (MG-CWS-18)',
-        sales: 119.4,
-        units: 6,
-        orders: 5,
-        fees: 67.19,
-        refunds: 0,
-        netProfit: 39.19,
-        netProfitPerUnit: 6.53,
-        inventory: 15,
-        avgUnitsPerDay: 6,
-        stockoutDate: 'Jan 17, 2026',
-        bsr: 4570,
-      },
-      {
-        product: 'Magnelex Car Windshield Sunshade',
-        asin: 'B074DL... (MG-WS-1)',
-        sales: 81.54,
-        units: 6,
-        orders: 6,
-        fees: 80.72,
-        refunds: 36.86,
-        netProfit: -9.92,
-        netProfitPerUnit: -1.65,
-        inventory: 319,
-        avgUnitsPerDay: 6,
-        stockoutDate: 'Mar 25, 2026',
-        bsr: 1897,
-      },
-      {
-        product: 'Windshield Sunshade for Toyota',
-        asin: 'B0F4X... (MG-CWS-27)',
-        sales: 79.6,
-        units: 4,
-        orders: 4,
-        fees: 35.02,
-        refunds: 0,
-        netProfit: 36.62,
-        netProfitPerUnit: 9.15,
-        inventory: 268,
-        avgUnitsPerDay: 4,
-        stockoutDate: 'Jul 31, 2026',
-        bsr: 4570,
-      },
-      {
-        product: 'Microfiber Leather Steering Cover',
-        asin: 'B084C... (MG-SC-ST)',
-        sales: 76.1,
-        units: 5,
-        orders: 5,
-        fees: 48.05,
-        refunds: 0,
-        netProfit: 8.8,
-        netProfitPerUnit: 1.76,
-        inventory: 350,
-        avgUnitsPerDay: 5,
-        stockoutDate: 'May 22, 2026',
-        bsr: 40720,
-      },
-    ],
-    [range]
-  );
+  const rows: ProductRow[] = useMemo(() => {
+  const templates = [
+    { product: 'Magnelex Car Windshield Sunshade', sku: 'MG-WS-2' },
+    { product: 'Windshield Sunshade for Tesla', sku: 'MG-CWS-18' },
+    { product: 'Windshield Sunshade for Toyota', sku: 'MG-CWS-27' },
+    { product: 'Microfiber Leather Steering Cover', sku: 'MG-SC-ST' },
+    { product: 'Magnelex Snow Cover', sku: 'MG-SC-F' },
+    { product: 'Side Window Shade', sku: 'MG-SIDE-01' },
+    { product: 'Car Cover – All Weather', sku: 'MG-COVER-01' },
+    { product: 'Sunshade for BMW', sku: 'MG-CWS-33' },
+    { product: 'Sunshade for Ford', sku: 'MG-CWS-41' },
+    { product: 'Sunshade for Honda', sku: 'MG-CWS-52' },
+  ];
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const asin = (i: number) => `B0${(7000 + i).toString(36).toUpperCase()}...`;
+
+return Array.from({ length: 30 }, (_, i) => {
+  const t = templates[i % templates.length];
+  const units = 2 + ((i * 3) % 14);
+  const orders = Math.max(1, units - (i % 3));
+  const sales = Math.round((45 + i * 7.3 + (i % 5) * 11) * 100) / 100;
+
+  const fees = Math.round((sales * (0.32 + (i % 4) * 0.03)) * 100) / 100;
+  const refunds = i % 7 === 0 ? Math.round(sales * 0.18 * 100) / 100 : 0;
+
+  const netProfit =
+    Math.round(((sales - fees - refunds) * (0.18 + (i % 5) * 0.02) - 4) * 100) /
+    100;
+  const netProfitPerUnit =
+    Math.round((netProfit / Math.max(1, units)) * 100) / 100;
+
+  const inventory = 10 + ((i * 37) % 420);
+  const avgUnitsPerDay = Math.max(1, Math.round(units * (0.6 + (i % 4) * 0.15)));
+
+  const day = 12 + (i % 18);
+  const stockoutDate = `Jan ${pad(day)}, 2026`;
+
+  const bsr = 1200 + i * 173;
+
+  // ✅ DUMMY IMAGE
+  const imageUrl = `https://m.media-amazon.com/images/I/71fmAN6pqNL.jpg?text=${encodeURIComponent(
+    t.sku
+  )}`;
+
+  return {
+    imageUrl, // ✅ buraya ekledik
+    product: t.product,
+    asin: `${asin(i)} (${t.sku}-${pad(i + 1)})`,
+    sales,
+    units,
+    orders,
+    fees,
+    refunds,
+    netProfit,
+    netProfitPerUnit,
+    inventory,
+    avgUnitsPerDay,
+    stockoutDate,
+    bsr,
+  };
+});
+}, [range]);
+
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -475,82 +460,8 @@ export default function Page() {
 
         {/* Main grid: charts + table */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left: table */}
-          <section className="lg:col-span-8 rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] overflow-hidden">
-            <div className="px-4 py-3 border-b border-[var(--ring)] flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">Products</div>
-                <div className="text-xs text-[var(--muted3)]">By ASIN • {range}</div>
-              </div>
-              <div className="text-xs text-[var(--muted)]">Showing {filtered.length}</div>
-            </div>
-
-            <div className="overflow-auto">
-              <table className="min-w-[1100px] w-full text-sm">
-                <thead className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
-                  <tr className="border-b border-[var(--ring)] bg-[var(--panelAlt)]">
-                    <th className="text-left px-4 py-3 w-[320px]">Product</th>
-                    <th className="text-left px-3 py-3">ASIN</th>
-                    <th className="text-right px-3 py-3">Sales</th>
-                    <th className="text-right px-3 py-3">Units</th>
-                    <th className="text-right px-3 py-3">Orders</th>
-                    <th className="text-right px-3 py-3">Fees</th>
-                    <th className="text-right px-3 py-3">Refunds</th>
-                    <th className="text-right px-3 py-3">Net Profit</th>
-                    <th className="text-right px-3 py-3">Profit/Unit</th>
-                    <th className="text-right px-3 py-3">Inv.</th>
-                    <th className="text-right px-3 py-3">Avg/Day</th>
-                    <th className="text-right px-3 py-3">Stockout</th>
-                    <th className="text-right px-4 py-3">BSR</th>
-                  </tr>
-                </thead>
-                <tbody className="text-[var(--tableText)]">
-                  {filtered.map((r, idx) => {
-                    const profitGood = r.netProfit >= 0;
-                    return (
-                      <tr
-                        key={idx}
-                        className="border-b border-[var(--ring)] hover:bg-[var(--panelHover)] transition"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-[var(--text)]">{r.product}</div>
-                          <div className="text-xs text-[var(--muted3)]">Product-level clarity</div>
-                        </td>
-                        <td className="px-3 py-3 text-[var(--muted2)]">{r.asin}</td>
-                        <td className="px-3 py-3 text-right tabular-nums">{money(r.sales)}</td>
-                        <td className="px-3 py-3 text-right tabular-nums">{num(r.units)}</td>
-                        <td className="px-3 py-3 text-right tabular-nums">{num(r.orders)}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{money(r.fees)}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{money(r.refunds)}</td>
-                        <td className="px-3 py-3 text-right">
-                          <span
-                            className={[
-                              'inline-flex items-center rounded-xl px-2 py-1 tabular-nums text-xs font-semibold ring-1',
-                              profitGood
-                                ? 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/25'
-                                : 'bg-rose-500/10 text-rose-700 ring-rose-500/25',
-                            ].join(' ')}
-                          >
-                            {money(r.netProfit)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">
-                          {money(r.netProfitPerUnit)}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums">{num(r.inventory)}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{num(r.avgUnitsPerDay)}</td>
-                        <td className="px-3 py-3 text-right text-[var(--muted2)]">{r.stockoutDate}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-[var(--muted2)]">{num(r.bsr)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
           {/* Right: charts */}
-          <aside className="lg:col-span-4 grid gap-4">
+          <aside className="lg:col-span-12 grid gap-4 lg:grid-cols-2">
             <section className="rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -642,6 +553,91 @@ export default function Page() {
               </div>
             </section>
           </aside>
+          {/* Left: table */}
+          <section className="lg:col-span-12 rounded-2xl bg-[var(--panel)] ring-1 ring-[var(--ring)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--ring)] flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">Products</div>
+                <div className="text-xs text-[var(--muted3)]">By ASIN • {range}</div>
+              </div>
+              <div className="text-xs text-[var(--muted)]">Showing {filtered.length}</div>
+            </div>
+
+            <div className="overflow-auto">
+              <table className="min-w-[1100px] w-full text-sm">
+                <thead className="text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                  <tr className="border-b border-[var(--ring)] bg-[var(--panelAlt)]">
+                    <th className="text-left px-4 py-3 w-[320px]">Product</th>
+                    <th className="text-left px-3 py-3">ASIN</th>
+                    <th className="text-right px-3 py-3">Sales</th>
+                    <th className="text-right px-3 py-3">Units</th>
+                    <th className="text-right px-3 py-3">Orders</th>
+                    <th className="text-right px-3 py-3">Fees</th>
+                    <th className="text-right px-3 py-3">Refunds</th>
+                    <th className="text-right px-3 py-3">Net Profit</th>
+                    <th className="text-right px-3 py-3">Profit/Unit</th>
+                    <th className="text-right px-3 py-3">Inv.</th>
+                    <th className="text-right px-3 py-3">Avg/Day</th>
+                    <th className="text-right px-3 py-3">Stockout</th>
+                    <th className="text-right px-4 py-3">BSR</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[var(--tableText)]">
+                  {filtered.map((r, idx) => {
+                    const profitGood = r.netProfit >= 0;
+                    return (
+                      <tr
+                        key={idx}
+                        className="border-b border-[var(--ring)] hover:bg-[var(--panelHover)] transition"
+                      >
+                        <td className="px-4 py-3">
+  <div className="flex items-center gap-3">
+    <img
+      src={r.imageUrl}
+      alt={r.product}
+      width={56}
+      height={56}
+      className="h-12 w-12 rounded-xl ring-1 ring-[var(--ring)] object-cover"
+    />
+    <div>
+      <div className="font-medium text-[var(--text)]">{r.product}</div>
+      <div className="text-xs text-[var(--muted3)]">Product-level clarity</div>
+    </div>
+  </div>
+</td>
+
+                        <td className="px-3 py-3 text-[var(--muted2)]">{r.asin}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{money(r.sales)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{num(r.units)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{num(r.orders)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{money(r.fees)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{money(r.refunds)}</td>
+                        <td className="px-3 py-3 text-right">
+                          <span
+                            className={[
+                              'inline-flex items-center rounded-xl px-2 py-1 tabular-nums text-xs font-semibold ring-1',
+                              profitGood
+                                ? 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/25'
+                                : 'bg-rose-500/10 text-rose-700 ring-rose-500/25',
+                            ].join(' ')}
+                          >
+                            {money(r.netProfit)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">
+                          {money(r.netProfitPerUnit)}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums">{num(r.inventory)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{num(r.avgUnitsPerDay)}</td>
+                        <td className="px-3 py-3 text-right text-[var(--muted2)]">{r.stockoutDate}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-[var(--muted2)]">{num(r.bsr)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
         <div className="mt-6 text-xs text-[var(--muted)]">
