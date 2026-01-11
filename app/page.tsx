@@ -12,7 +12,7 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { RefreshCw, Download, Filter, Search, Sun, Moon } from 'lucide-react';
+import { RefreshCw, Download, Filter, Search, Sun, Moon, Menu, X } from 'lucide-react';
 
 type RangeKey =
   | 'Today'
@@ -65,8 +65,8 @@ function Pill({
       className={[
         'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
         good
-          ? 'bg-emerald-500/12 text-emerald-700 ring-1 ring-emerald-500/25 dark:text-emerald-300 dark:ring-emerald-500/20'
-          : 'bg-rose-500/12 text-rose-700 ring-1 ring-rose-500/25 dark:text-rose-300 dark:ring-rose-500/20',
+          ? 'bg-emerald-500/12 text-emerald-700 ring-1 ring-emerald-500/25'
+          : 'bg-rose-500/12 text-rose-700 ring-1 ring-rose-500/25',
       ].join(' ')}
     >
       {isPositive ? '▲' : '▼'} {pct(Math.abs(value))}
@@ -96,7 +96,7 @@ function KpiCard({
             {value}
           </div>
           {sub ? (
-            <div className="mt-1 text-xs text-[var(--muted2)]">{sub}</div>
+            <div className="mt-1 text-xs text-[var(--muted3)]">{sub}</div>
           ) : null}
         </div>
         {typeof delta === 'number' ? <Pill value={delta} /> : null}
@@ -168,7 +168,9 @@ function IconButton({
 type ThemeMode = 'night' | 'day';
 
 export default function Page() {
-  const [theme, setTheme] = useState<ThemeMode>('night');
+  // 1) default DAY
+  const [theme, setTheme] = useState<ThemeMode>('day');
+  const [menuOpen, setMenuOpen] = useState(false);
   const [range, setRange] = useState<RangeKey>('Today');
   const [query, setQuery] = useState('');
   const [metric, setMetric] = useState<'Sales' | 'Net Profit' | 'Units'>(
@@ -178,7 +180,6 @@ export default function Page() {
   const themeVars =
     theme === 'night'
       ? ({
-          // Night (senin mevcut tasarımın)
           '--bg': '#060B17',
           '--headerBg': 'rgba(6,11,23,0.80)',
           '--panel': 'rgba(255,255,255,0.05)',
@@ -194,14 +195,13 @@ export default function Page() {
           '--axis': 'rgba(255,255,255,0.35)',
           '--tooltipBg': 'rgba(10,14,26,0.95)',
           '--tooltipBorder': 'rgba(255,255,255,0.12)',
-
           '--chipBg': 'rgba(255,255,255,0.05)',
           '--chipHoverBg': 'rgba(255,255,255,0.08)',
           '--chipActiveBg': 'rgba(255,255,255,1)',
           '--chipActiveText': '#0f172a',
+          '--menuBg': 'rgba(6,11,23,0.98)',
         } as React.CSSProperties)
       : ({
-          // Day (light)
           '--bg': '#F6F7FB',
           '--headerBg': 'rgba(246,247,251,0.80)',
           '--panel': 'rgba(255,255,255,0.92)',
@@ -217,24 +217,24 @@ export default function Page() {
           '--axis': 'rgba(15,23,42,0.40)',
           '--tooltipBg': 'rgba(255,255,255,0.98)',
           '--tooltipBorder': 'rgba(15,23,42,0.14)',
-
           '--chipBg': 'rgba(15,23,42,0.05)',
           '--chipHoverBg': 'rgba(15,23,42,0.08)',
           '--chipActiveBg': 'rgba(15,23,42,1)',
           '--chipActiveText': '#ffffff',
+          '--menuBg': 'rgba(255,255,255,0.98)',
         } as React.CSSProperties);
 
-  // Demo KPI values
   const kpis = {
     sales: 1621.01,
     units: 95,
     orders: 93,
-    avgPrice: 17.06,
-    netBeforeCog: 435.37,
+    amazonFees: 482.15,
+    adSpend: 156.16,
+    refundCost: 38.88,
+    netRevenue: 1285.77,
     netProfit: 214.63,
     margin: 0.132,
     refunds: 0.028,
-    adSpend: 156.16,
     roi: 0.97,
   };
 
@@ -359,72 +359,97 @@ export default function Page() {
       style={themeVars}
       className="min-h-screen bg-[var(--bg)] text-[var(--text)]"
     >
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-[var(--ring)] bg-[var(--headerBg)] backdrop-blur">
-        <div className="mx-auto max-w-[1400px] px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] grid place-items-center font-semibold">
-              A
-            </div>
-            <div>
-              <div className="text-sm font-semibold tracking-tight">
-                AMZSeller
-              </div>
-              <div className="text-xs text-[var(--muted3)]">Dashboard</div>
-            </div>
-          </div>
+{/* Top bar */}
+<header className="sticky top-0 z-20 border-b border-[var(--ring)] bg-[var(--headerBg)] backdrop-blur">
+  <div className="mx-auto max-w-[1400px] px-6 py-4">
+    <div className="relative flex items-center justify-center">
+      {/* LEFT: Dashboard menu button (Cashcow gibi buradan açılacak) */}
+      <div className="absolute left-0">
+  <div className="relative">
+    <button
+      onClick={() => setMenuOpen((v) => !v)}
+      className="inline-flex items-center gap-2 rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)]
+                 px-3 py-2 text-xs font-semibold text-[var(--text)]
+                 hover:bg-[var(--chipHoverBg)] transition"
+      aria-label="Open menu"
+    >
+      DASHBOARD <Menu size={16} />
+    </button>
 
-          <div className="flex items-center gap-2">
-            <IconButton
-              icon={theme === 'night' ? <Sun size={16} /> : <Moon size={16} />}
-              label={theme === 'night' ? 'Day' : 'Night'}
-              onClick={() => setTheme((t) => (t === 'night' ? 'day' : 'night'))}
-            />
-            <IconButton icon={<Download size={16} />} label="Export" />
-            <IconButton icon={<RefreshCw size={16} />} label="Refresh" />
-          </div>
+    {/* Dropdown menu (butonun ALTINA) */}
+    {menuOpen ? (
+      <div className="absolute left-0 top-[calc(100%+10px)] w-[320px] rounded-2xl
+                      bg-[var(--menuBg)] ring-1 ring-[var(--ring)] shadow-2xl overflow-hidden z-50">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--ring)]">
+          <div className="text-sm font-semibold">Menu</div>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="rounded-lg p-2 hover:bg-[var(--chipHoverBg)] transition"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
         </div>
-      </header>
+
+        <nav className="p-2">
+          {[
+            'Dashboard',
+            'Sales Estimator',
+            'Keyword Rank Tracker',
+            'Keyword Finder',
+            'Listing Analyzer',
+            'Inventory',
+            'Review Automation',
+            'Listing Builder',
+            'Issue Assistance',
+            'Amazon Liability Insurance',
+          ].map((item) => (
+            <button
+              key={item}
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-left rounded-xl px-3 py-2.5 text-sm text-[var(--text)]
+                         hover:bg-[var(--chipHoverBg)] transition"
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+      </div>
+    ) : null}
+  </div>
+</div>
+
+
+      {/* CENTER: Brand */}
+      <div className="text-lg sm:text-xl font-semibold tracking-tight">
+        AMZSeller
+      </div>
+
+      {/* RIGHT: actions */}
+      <div className="absolute right-0 flex items-center gap-2">
+        <IconButton
+          icon={theme === 'night' ? <Sun size={16} /> : <Moon size={16} />}
+          label={theme === 'night' ? 'Day' : 'Night'}
+          onClick={() => setTheme((t) => (t === 'night' ? 'day' : 'night'))}
+        />
+        <IconButton icon={<Download size={16} />} label="Export" />
+        <IconButton icon={<RefreshCw size={16} />} label="Refresh" />
+      </div>
+    </div>
+  </div>
+</header>
+
 
       <main className="mx-auto max-w-[1400px] px-6 py-6">
-        {/* KPI row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <KpiCard
-            label="Sales"
-            value={money(kpis.sales)}
-            sub="Net revenue"
-            delta={0.041}
-          />
-          <KpiCard
-            label="Units"
-            value={num(kpis.units)}
-            sub="Full: 95 • Promo: 0"
-            delta={0.018}
-          />
-          <KpiCard
-            label="Orders"
-            value={num(kpis.orders)}
-            sub="Full: 93 • Promo: 0"
-            delta={-0.012}
-          />
-          <KpiCard
-            label="Avg. Price"
-            value={money(kpis.avgPrice)}
-            sub="Stock value tracked"
-            delta={0.006}
-          />
-          <KpiCard
-            label="Net Before COG"
-            value={money(kpis.netBeforeCog)}
-            sub="Before product cost"
-            delta={0.022}
-          />
-          <KpiCard
-            label="Net Profit"
-            value={money(kpis.netProfit)}
-            sub={`Margin: ${pct(kpis.margin)}`}
-            delta={0.015}
-          />
+        {/* KPI row (7 KPI) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+          <KpiCard label="Sales" value={money(kpis.sales)} sub="Gross sales (demo)" delta={0.041} />
+          <KpiCard  label="Units / Orders"  value={`${num(kpis.units)} / ${num(kpis.orders)}`}  sub={`Units: ${num(kpis.units)} • Orders: ${num(kpis.orders)}`}  delta={0.018}/>
+          <KpiCard  label="Amazon Fees"  value={money(kpis.amazonFees)}  sub="Referral & FBA fees"  delta={0.021}/>
+          <KpiCard label="Ad Spend" value={money(kpis.adSpend)} sub="Advertising cost" delta={0.006} />
+          <KpiCard label="Refund Cost" value={money(kpis.refundCost)} sub="Refunded amount" delta={0.012} />
+          <KpiCard label="Net Revenue" value={money(kpis.netRevenue)} sub="After fees & refunds" delta={0.022} />
+          <KpiCard label="Net Profit" value={money(kpis.netProfit)} sub={`Margin: ${pct(kpis.margin)}`} delta={0.015} />
         </div>
 
         {/* Range + controls */}
@@ -455,13 +480,9 @@ export default function Page() {
             <div className="px-4 py-3 border-b border-[var(--ring)] flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold">Products</div>
-                <div className="text-xs text-[var(--muted3)]">
-                  By ASIN • {range}
-                </div>
+                <div className="text-xs text-[var(--muted3)]">By ASIN • {range}</div>
               </div>
-              <div className="text-xs text-[var(--muted)]">
-                Showing {filtered.length}
-              </div>
+              <div className="text-xs text-[var(--muted)]">Showing {filtered.length}</div>
             </div>
 
             <div className="overflow-auto">
@@ -492,38 +513,22 @@ export default function Page() {
                         className="border-b border-[var(--ring)] hover:bg-[var(--panelHover)] transition"
                       >
                         <td className="px-4 py-3">
-                          <div className="font-medium text-[var(--text)]">
-                            {r.product}
-                          </div>
-                          <div className="text-xs text-[var(--muted3)]">
-                            Product-level clarity
-                          </div>
+                          <div className="font-medium text-[var(--text)]">{r.product}</div>
+                          <div className="text-xs text-[var(--muted3)]">Product-level clarity</div>
                         </td>
-                        <td className="px-3 py-3 text-[var(--muted2)]">
-                          {r.asin}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums">
-                          {money(r.sales)}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums">
-                          {num(r.units)}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums">
-                          {num(r.orders)}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">
-                          {money(r.fees)}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">
-                          {money(r.refunds)}
-                        </td>
+                        <td className="px-3 py-3 text-[var(--muted2)]">{r.asin}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{money(r.sales)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{num(r.units)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{num(r.orders)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{money(r.fees)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{money(r.refunds)}</td>
                         <td className="px-3 py-3 text-right">
                           <span
                             className={[
                               'inline-flex items-center rounded-xl px-2 py-1 tabular-nums text-xs font-semibold ring-1',
                               profitGood
-                                ? 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/25 dark:text-emerald-200 dark:ring-emerald-500/20'
-                                : 'bg-rose-500/10 text-rose-700 ring-rose-500/25 dark:text-rose-200 dark:ring-rose-500/20',
+                                ? 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/25'
+                                : 'bg-rose-500/10 text-rose-700 ring-rose-500/25',
                             ].join(' ')}
                           >
                             {money(r.netProfit)}
@@ -532,18 +537,10 @@ export default function Page() {
                         <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">
                           {money(r.netProfitPerUnit)}
                         </td>
-                        <td className="px-3 py-3 text-right tabular-nums">
-                          {num(r.inventory)}
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">
-                          {num(r.avgUnitsPerDay)}
-                        </td>
-                        <td className="px-3 py-3 text-right text-[var(--muted2)]">
-                          {r.stockoutDate}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-[var(--muted2)]">
-                          {num(r.bsr)}
-                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums">{num(r.inventory)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-[var(--muted2)]">{num(r.avgUnitsPerDay)}</td>
+                        <td className="px-3 py-3 text-right text-[var(--muted2)]">{r.stockoutDate}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-[var(--muted2)]">{num(r.bsr)}</td>
                       </tr>
                     );
                   })}
@@ -558,9 +555,7 @@ export default function Page() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold">Trend</div>
-                  <div className="text-xs text-[var(--muted3)]">
-                    Sales, profit, units
-                  </div>
+                  <div className="text-xs text-[var(--muted3)]">Sales, profit, units</div>
                 </div>
 
                 <div className="flex gap-2">
@@ -588,11 +583,7 @@ export default function Page() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
-                    <XAxis
-                      dataKey="day"
-                      stroke="var(--axis)"
-                      tick={{ fontSize: 11 }}
-                    />
+                    <XAxis dataKey="day" stroke="var(--axis)" tick={{ fontSize: 11 }} />
                     <YAxis stroke="var(--axis)" tick={{ fontSize: 11 }} />
                     <RTooltip
                       contentStyle={{
@@ -609,28 +600,16 @@ export default function Page() {
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-[var(--muted2)]">
                 <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
-                  <div className="text-[11px] uppercase text-[var(--muted)]">
-                    Refund rate
-                  </div>
-                  <div className="mt-1 font-semibold text-[var(--text)]">
-                    {pct(kpis.refunds)}
-                  </div>
+                  <div className="text-[11px] uppercase text-[var(--muted)]">Refund rate</div>
+                  <div className="mt-1 font-semibold text-[var(--text)]">{pct(kpis.refunds)}</div>
                 </div>
                 <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
-                  <div className="text-[11px] uppercase text-[var(--muted)]">
-                    Ad spend
-                  </div>
-                  <div className="mt-1 font-semibold text-[var(--text)]">
-                    {money(kpis.adSpend)}
-                  </div>
+                  <div className="text-[11px] uppercase text-[var(--muted)]">Ad spend</div>
+                  <div className="mt-1 font-semibold text-[var(--text)]">{money(kpis.adSpend)}</div>
                 </div>
                 <div className="rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] p-2">
-                  <div className="text-[11px] uppercase text-[var(--muted)]">
-                    ROI
-                  </div>
-                  <div className="mt-1 font-semibold text-[var(--text)]">
-                    {pct(kpis.roi)}
-                  </div>
+                  <div className="text-[11px] uppercase text-[var(--muted)]">ROI</div>
+                  <div className="mt-1 font-semibold text-[var(--text)]">{pct(kpis.roi)}</div>
                 </div>
               </div>
             </section>
@@ -639,9 +618,7 @@ export default function Page() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold">Top ASINs</div>
-                  <div className="text-xs text-[var(--muted3)]">
-                    By net profit
-                  </div>
+                  <div className="text-xs text-[var(--muted3)]">By net profit</div>
                 </div>
               </div>
 
@@ -649,11 +626,7 @@ export default function Page() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topAsins}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
-                    <XAxis
-                      dataKey="name"
-                      stroke="var(--axis)"
-                      tick={{ fontSize: 11 }}
-                    />
+                    <XAxis dataKey="name" stroke="var(--axis)" tick={{ fontSize: 11 }} />
                     <YAxis stroke="var(--axis)" tick={{ fontSize: 11 }} />
                     <RTooltip
                       contentStyle={{
@@ -671,7 +644,6 @@ export default function Page() {
           </aside>
         </div>
 
-        {/* Footer hint */}
         <div className="mt-6 text-xs text-[var(--muted)]">
           AMZSeller • Advanced Merchant Zone.
         </div>
