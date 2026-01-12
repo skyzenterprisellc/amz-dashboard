@@ -173,32 +173,34 @@ function IconButton({
       className="inline-flex items-center gap-2 rounded-xl bg-[var(--chipBg)] ring-1 ring-[var(--ring)] px-3 py-2 text-xs font-medium text-[var(--muted2)] hover:text-[var(--text)] hover:bg-[var(--chipHoverBg)] transition"
     >
       {icon}
-      {label}
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }
 
 type ThemeMode = 'night' | 'day';
 
-function ACheck({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: () => void;
-}) {
+function ACheck({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <button
-      type="button"
+    <span
+      role="checkbox"
+      aria-checked={checked}
+      tabIndex={0}
       onClick={(e) => {
-        e.stopPropagation(); // ✅ parent button’a gitmesin
+        e.stopPropagation();
         onChange();
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onChange();
+        }
+      }}
       className={[
-        'h-4 w-4 rounded-[4px] ring-1 ring-[var(--ring)] flex items-center justify-center',
+        'h-4 w-4 rounded-[4px] ring-1 ring-[var(--ring)] flex items-center justify-center cursor-pointer',
         checked ? 'bg-[#FF9900]' : 'bg-transparent',
       ].join(' ')}
-      aria-pressed={checked}
       aria-label={checked ? 'Checked' : 'Unchecked'}
     >
       {checked ? (
@@ -212,10 +214,9 @@ function ACheck({
           />
         </svg>
       ) : null}
-    </button>
+    </span>
   );
 }
-
 
 // ===== Compare Sales Card =====
 function CompareSalesCard({
@@ -778,7 +779,7 @@ export default function Page() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-[var(--ring)] bg-[var(--headerBg)] backdrop-blur">
         <div className="mx-auto max-w-[1400px] px-6 py-4">
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-between sm:justify-center gap-2">
             {/* LEFT */}
             <div className="absolute left-0">
               <div className="relative">
@@ -789,7 +790,7 @@ export default function Page() {
                              hover:bg-[var(--chipHoverBg)] transition"
                   aria-label="Open menu"
                 >
-                  DASHBOARD <Menu size={16} />
+                  <span className="hidden sm:inline">DASHBOARD</span> <Menu size={16} />
                 </button>
 
                 {menuOpen ? (
@@ -837,12 +838,12 @@ export default function Page() {
             </div>
 
             {/* CENTER */}
-            <div className="text-lg sm:text-xl font-semibold tracking-tight">
-              AMZSeller
+            <div className="text-lg sm:text-xl font-semibold tracking-tight pl-12 sm:pl-0">
+              <span className="text-[#FF9900]">AMZ</span>Seller
             </div>
 
             {/* RIGHT */}
-            <div className="absolute right-0 flex items-center gap-2">
+            <div className="static sm:absolute sm:right-0 flex items-center gap-2">
               <IconButton
                 icon={theme === 'night' ? <Sun size={16} /> : <Moon size={16} />}
                 label={theme === 'night' ? 'Day' : 'Night'}
@@ -1096,13 +1097,18 @@ export default function Page() {
                         <td className="px-3 py-3 text-right tabular-nums text-orange-400">
                           {money(r.refunds)}
                         </td>
-                        <td
-                          className={`px-3 py-3 text-right tabular-nums ${
-                            profitGood ? 'text-green-400' : 'text-red-400'
-                          }`}
-                        >
-                          {money(r.netProfit)}
-                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <span
+                            className={[
+                              'inline-flex items-center justify-end rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ring-1',
+                              r.netProfit >= 0
+                                ? 'bg-emerald-500/12 text-emerald-700 ring-emerald-500/25'
+                                  : 'bg-rose-500/12 text-rose-700 ring-rose-500/25',
+                              ].join(' ')}
+                            >
+                              {money(r.netProfit)}
+                            </span>
+                          </td>        
                         <td className="px-3 py-3 text-right tabular-nums">
                           {money(r.netProfitPerUnit)}
                         </td>
